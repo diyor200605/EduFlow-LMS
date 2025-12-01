@@ -16,10 +16,10 @@ def init_db():
         password TEXT,
         phone TEXT,
         lesson TEXT,
+        week TEXT,
         hours TEXT,
-        lessons_week TEXT,
-        registered INTEGER DEFAULT 0,
-        logged_in INTEGER DEFAULT 0
+        remaining_lessons TEXT,
+        payments TEXT
     )
     """)
 
@@ -48,12 +48,12 @@ def init_db():
 
 
 
-def register_user(user_id: int, username: str, password: str, phone: str, lesson: str, hours: str):
+def register_user(user_id: int, username: str, password: str, phone: str, lesson: str, week: str, hours: str):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (user_id, username, password, phone, lesson, hours, registered) VALUES (?, ?, ?, ?, ?, ?, 1)",
-        (user_id, username, password, phone, lesson, hours)
+        "INSERT INTO users (user_id, username, password, phone, lesson, week, hours) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (user_id, username, password, phone, lesson, week, hours)
     )
     conn.commit()
     conn.close()
@@ -149,6 +149,16 @@ def get_homework_user(user_id: int):
     return rows
 
 
+def add_student(username, phone, lesson, hours, week, payments=""):
+    remaining_lessons = lesson 
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO users (username, phone, lesson, hours, week, remaining_lessons, payments)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (username, phone, lesson, hours, week, remaining_lessons, payments))
+    conn.commit()
+    conn.close()
 
 
 def get_count_students():
@@ -314,3 +324,117 @@ def add_time_schedule(user_id: int, time_schedule: str):
     conn.commit()
     conn.close()
     
+def get_user_profile(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT username, phone, lesson, hours, week, remaining_lessons, payments
+    FROM users
+    WHERE user_id = ?
+    """, (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user 
+
+
+def get_student_schedule(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT schedule, extra_schedule
+    FROM schedule
+    WHERE user_id = ?
+    """, (user_id,))
+    schedule = cursor.fetchone()
+    conn.close()
+    return schedule
+
+
+
+def decrement_remaining_lessons(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT remaining_lessons FROM users WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+
+    if result is None:
+        conn.close()
+        return None
+
+    remaining = result[0]  
+
+  
+    if remaining is None:
+        cursor.execute("SELECT lesson FROM users WHERE user_id = ?", (user_id,))
+        lesson = cursor.fetchone()[0]
+        remaining = int(lesson)
+    else:
+        remaining = int(remaining)
+
+    if remaining > 0:
+        remaining -= 1
+        cursor.execute("UPDATE users SET remaining_lessons = ? WHERE user_id = ?", (remaining, user_id))
+        conn.commit()
+
+    conn.close()
+    return remaining
+
+def confirm_payment(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT payments FROM users WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+
+    if row is None:
+        conn.close()
+        return None
+
+    new_status = "оплачено"
+
+    cursor.execute("UPDATE users SET payments = ? WHERE user_id = ?", (new_status, user_id))
+    conn.commit()
+    conn.close()
+
+    return new_status
+
+def check_payment_status(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT remaining_lessons, payments FROM users WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+
+    if row is None:
+        conn.close()
+        return None
+
+    remaining_lessons, payments = row
+
+    if remaining_lessons == 0:
+        new_status = "не оплачено"
+        cursor.execute("UPDATE users SET payments = ? WHERE user_id = ?", (new_status, user_id))
+        conn.commit()
+        conn.close()
+        return new_status
+
+    conn.close()
+    return payments
+    
+
+def select_lessons(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT lesson FROM users WHERE user_id = ?", (user_id,))
+    lesson = cursor.fetchone()[0]
+    conn.close()
+    return lesson
+
+
+
+def get_user_name(user_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM users WHERE user_id = ?", (user_id,))
+    username = cursor.fetchone()[0]
+    conn.close()
+    return username

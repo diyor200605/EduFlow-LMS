@@ -11,7 +11,10 @@ from database.db import (
     password_check
 )
 
-from Keyboards.student_kb import phone_number, reg_lessons, reg_hours, reg_lessons_week
+from Keyboards.student_kb import phone_number, reg_lessons, reg_hours, reg_lessons_week, get_student_main_menu
+
+from rec_schedule import recommend_schedule
+
 
 router = Router()
 
@@ -64,41 +67,54 @@ async def register_for_phone(message: Message, state: FSMContext):
     phone = message.contact.phone_number
     await state.update_data(phone=phone)
 
-    await message.answer("Выберите количество уроков:", reply_markup=reg_lessons())
-    await state.set_state(Registration.register_for_lessons)
-
-
-@router.callback_query(Registration.register_for_lessons)
-async def register_for_lessons(callback: CallbackQuery, state: FSMContext):
-    lesson = callback.data
-
-    await state.update_data(lesson=lesson)
-    await callback.message.answer("Выберите количество часов:", reply_markup=reg_hours())
+    await message.answer("Выберите количество уроков в неделю:", reply_markup=reg_lessons_week())
     await state.set_state(Registration.register_lessons_week)
 
 
 @router.callback_query(Registration.register_lessons_week)
-async def register_lessons_week(callback: CallbackQuery, state: FSMContext):
-    lessons_week = callback.data
+async def register_for_lessons_week(callback: CallbackQuery, state: FSMContext):
+    week = callback.data
 
-    await state.update_data(lessons_week=lessons_week)
-    await callback.message.answer("Выберите уроков в неделю:", reply_markup=reg_lessons_week())
+    await state.update_data(week=week)
+    await callback.message.answer("Выберите количество часов:", reply_markup=reg_hours())
     await state.set_state(Registration.register_for_hours)
 
 
 @router.callback_query(Registration.register_for_hours)
 async def register_for_hours(callback: CallbackQuery, state: FSMContext):
     hours = callback.data
+
     await state.update_data(hours=hours)
+    await callback.message.answer("Выберите уроков в месяц:", reply_markup=reg_lessons())
+    await state.set_state(Registration.register_for_lessons)
+
+
+
+@router.callback_query(Registration.register_for_lessons)
+async def register_for_lessons(callback: CallbackQuery, state: FSMContext):
+    lesson = int(callback.data)
+    await state.update_data(lesson=lesson)
     
     data = await state.get_data()
+    week = int(data["week"])
+    hours = int(data["hours"])
+
+  
+    schedule_ok = await recommend_schedule(
+        message=callback.message,
+        package=lesson,
+        hours_per_day=hours,
+        lessons_week=week
+    )
+
+    if not schedule_ok:
+        return await callback.message.answer(
+            "⚠ Пожалуйста, измените расписание и попробуйте снова."
+        )
+
     username = data["username"]
     password = data["password"]
     phone = data["phone"]
-    lesson = data["lesson"]
-    lessons_week = data["lessons_week"]
-    hours = data["hours"]
-
 
     register_user(
         callback.from_user.id,
@@ -106,10 +122,9 @@ async def register_for_hours(callback: CallbackQuery, state: FSMContext):
         password,
         phone,
         lesson,
-        lessons_week,
+        week,
         hours
     )
-
 
     await callback.message.answer(
         f"🎉 *Регистрация завершена!*\n\n"
@@ -117,32 +132,15 @@ async def register_for_hours(callback: CallbackQuery, state: FSMContext):
         f"👤 Username: *{username}*\n"
         f"🔑 Password: *{password}*\n"
         f"📱 Телефон: *{phone}*\n"
-        f"📘 Уроки: *{lesson}*\n"
-        f"⏳ Уроков в неделю: *{lessons_week}*\n"
-        f"⏳ Часы: *{hours}*\n\n"
-        f"Пожалуйста, сохраните эти данные.\n\n"
-        f"После этого вы можете использовать команды /student и /teacher",
+        f"📘 Уроки в месяц: *{lesson}*\n"
+        f"📅 Уроки в неделю: *{week}*\n"
+        f"⏳ Часы: *{hours}*\n",
         parse_mode="Markdown",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=get_student_main_menu()
     )
 
     await state.clear()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 
 
 

@@ -77,8 +77,7 @@ def reg_lessons() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton(text="12", callback_data="12"),
-            InlineKeyboardButton(text="24", callback_data="24"),
-            InlineKeyboardButton(text="36", callback_data="36"),
+            InlineKeyboardButton(text="24", callback_data="24")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard, resize_keyboard=True)
@@ -88,8 +87,7 @@ def reg_hours() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton(text="1", callback_data="1"),
-            InlineKeyboardButton(text="2", callback_data="2"),
-            InlineKeyboardButton(text="3", callback_data="3"),
+            InlineKeyboardButton(text="2", callback_data="2")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard, resize_keyboard=True)
@@ -99,11 +97,7 @@ def reg_hours() -> InlineKeyboardMarkup:
 def reg_lessons_week() -> InlineKeyboardMarkup:
     keyboard = [
         [
-            InlineKeyboardButton(text="2", callback_data="2"),
-            InlineKeyboardButton(text="3", callback_data="3"),
-            InlineKeyboardButton(text="4", callback_data="4"),
-            InlineKeyboardButton(text="5", callback_data="5"),
-            InlineKeyboardButton(text="6", callback_data="6"),
+            InlineKeyboardButton(text="3", callback_data="3")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard, resize_keyboard=True)

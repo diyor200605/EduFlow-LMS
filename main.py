@@ -8,6 +8,7 @@ from handlers.student import router as student_router
 from database.db import init_db
 from handlers.teacher import router as teacher_router
 from aiogram.types import BotCommand
+from deadline_payment import router as deadline_payment_router
 
 router = Router()
 
@@ -33,6 +34,7 @@ async def main():
     dp.include_router(commands_router)
     dp.include_router(student_router)
     dp.include_router(teacher_router)
+    dp.include_router(deadline_payment_router)
     await set_commands()
 
     await dp.start_polling(bot)
