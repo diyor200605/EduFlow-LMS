@@ -13,6 +13,6 @@ async def check_payment(message: Message):
     
     if status == "не оплачено":
         await message.bot.send_message(
-            chat_id=-1003459152392,
+            chat_id=-5049926092,
             text=f"❗ Срок уроков истёк у {username}.\nПора оплатить обучение!"
         )

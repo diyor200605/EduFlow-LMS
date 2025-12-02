@@ -6,7 +6,8 @@ from database.db import (get_count_students,
                         get_user_profile,
                         get_student_schedule,
                         decrement_remaining_lessons,
-                        confirm_payment)
+                        confirm_payment,
+                        check_payment_status)
 
 
 from Keyboards.teacher_kb import (get_student_homeworks_keyboard,
@@ -96,7 +97,7 @@ async def show_student_profile(callback: CallbackQuery):
 
 
 @router.message(F.text == "Подтвердить урок✅")
-async def confirm_lesson(message: Message):
+async def confirm_lesson(message: Message):    
     await message.answer(
         "Выберите какого ученика урок подтвердить",
         reply_markup=get_confirm_lesson_keyboard()
@@ -105,18 +106,36 @@ async def confirm_lesson(message: Message):
 @router.callback_query(F.data.startswith("lesson_"))
 async def confirm_lesson_callback(callback: CallbackQuery):
     user_id = int(callback.data.split("_")[-1])
+    bot = callback.bot
 
     username = get_user_profile(user_id)[0]
+
     remaining = decrement_remaining_lessons(user_id)
 
     if remaining is None:
         await callback.message.answer("Пользователь не найден в базе!😕")
         return
+
+    
+    if remaining < 0:
+        remaining = 0
+
     await callback.message.answer(
         f"Урок ученика {username} подтверждён ✅\n"
-        f"Оставшиеся уроки у ученика: {remaining}"
+        f"Оставшиеся уроки: {remaining}"
     )
 
+    if remaining == 0:
+        status = check_payment_status(user_id)
+
+        if status == "не оплачено":
+            await bot.send_message(
+                chat_id=-1003459152392,
+                text=f"❗ У ученика {username} закончились уроки.\nПора оплатить обучение!"
+            )
+
+            
+    
 
 
 
@@ -144,8 +163,7 @@ async def show_schedule(message: Message):
     await message.answer(text)
 
 
-
-
+ 
             
  
 @router.message(F.text == "Оплаты💳")

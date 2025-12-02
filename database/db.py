@@ -379,6 +379,7 @@ def decrement_remaining_lessons(user_id: int):
     conn.close()
     return remaining
 
+
 def confirm_payment(user_id: int):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -388,15 +389,23 @@ def confirm_payment(user_id: int):
 
     if row is None:
         conn.close()
-        return None
+        return None 
+
+    old_status = row[0]
 
     new_status = "оплачено"
 
-    cursor.execute("UPDATE users SET payments = ? WHERE user_id = ?", (new_status, user_id))
+    cursor.execute(
+        "UPDATE users SET payments = ? WHERE user_id = ?",
+        (new_status, user_id)
+    )
     conn.commit()
     conn.close()
 
     return new_status
+
+
+
 
 def check_payment_status(user_id: int):
     conn = sqlite3.connect(DB_FILE)
@@ -410,7 +419,7 @@ def check_payment_status(user_id: int):
 
     remaining_lessons, payments = row
 
-    if remaining_lessons == 0:
+    if int(remaining_lessons) == 0:
         new_status = "не оплачено"
         cursor.execute("UPDATE users SET payments = ? WHERE user_id = ?", (new_status, user_id))
         conn.commit()

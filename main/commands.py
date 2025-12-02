@@ -5,6 +5,8 @@ from database.db import is_user_registered
 from Keyboards.student_kb import get_student_main_menu
 from Keyboards.teacher_kb import get_teacher_main_menu
 
+
+TEACHER_ID = 459976003
 router = Router()
 
 @router.message(CommandStart())
@@ -18,14 +20,17 @@ async def cmd_student(message: Message):
     if not is_user_registered(message.from_user.id):
         return await message.answer("Сначала зарегистрируйтесь через /register")
     
-    await message.answer("Привет! Ты ученик", reply_markup=get_student_main_menu())
+    await message.answer("Добро пожаловать в панель ученика!", reply_markup=get_student_main_menu())
 
 @router.message(Command("teacher"))
 async def cmd_teacher(message: Message):
+    if message.from_user.id != TEACHER_ID:
+        return await message.answer("⛔ Эта команда доступна только учителю.")
+
     if not is_user_registered(message.from_user.id):
         return await message.answer("Сначала зарегистрируйтесь через /register")
-
-    await message.answer("Привет! Ты учитель", reply_markup=get_teacher_main_menu())
+    
+    await message.answer("Добро пожаловать в панель учителя!", reply_markup=get_teacher_main_menu())
 
 
 
