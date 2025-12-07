@@ -67,20 +67,20 @@ async def send_hw(message: Message, state: FSMContext):
 async def users_schedule(message: Message):
     user_id = message.from_user.id
     
-    schedule_days = get_user_schedule(user_id)
-    extra_schedule = get_user_extra_schedule(user_id)
+    schedule = get_user_schedule(user_id)
 
-    if not schedule_days and not extra_schedule:
+    if schedule is None:
         return await message.answer(
             "У вас еще нет расписания.\n"
             "Создайте его через кнопку «Составить расписание📅»"
         )
 
+    main_schedule, extra_schedule = schedule
 
     msg = "Ваше расписание:\n\n"
 
-    if schedule_days:
-        msg += f"Основные дни: {schedule_days} ⏰\n"
+    if main_schedule:
+        msg += f"Основные дни: {main_schedule} ⏰\n"
     else:
         msg += "Основные дни: не указаны ❌\n"
 
@@ -88,6 +88,8 @@ async def users_schedule(message: Message):
         msg += f"Дополнительные уроки: {extra_schedule} ⏰\n"
     else:
         msg += "Дополнительные уроки: не добавлены ❌\n"
+
+    await message.answer(msg)
 
     await message.answer(msg)
 

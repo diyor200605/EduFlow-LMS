@@ -4,10 +4,10 @@ from database.db import (get_count_students,
                         get_all_students_ordered,
                         get_all_users_schedule,
                         get_user_profile,
-                        get_student_schedule,
+                        get_user_schedule,
                         decrement_remaining_lessons,
-                        confirm_payment,
-                        check_payment_status)
+                        check_payment_status,
+                        confirm_payment)
 
 
 from Keyboards.teacher_kb import (get_student_homeworks_keyboard,
@@ -60,21 +60,30 @@ async def count_students(message: Message):
     await message.answer(text, reply_markup=get_all_students_keyboard())
 
 
-
 @router.callback_query(F.data.startswith("student_"))
 async def show_student_profile(callback: CallbackQuery):
     user_id = int(callback.data.split("_")[-1])
     student_profile = get_user_profile(user_id)
+
     if not student_profile:
         await callback.message.answer("Пользователь не найден в базе!😕")
         return
 
-    name, phone, lesson, hours, week, remaining_lessons, payments = student_profile
+    # get_user_profile → возвращает 7 значений
+    name, phone, lesson, hours, week, remaining_lessons, payments_db = student_profile
 
+    # если remaining пустое — ставим lesson (столько купил)
     if remaining_lessons is None:
         remaining_lessons = lesson
 
-    student_schedule = get_student_schedule(user_id)
+    # Авто-логика оплаты
+    if int(remaining_lessons) > 0:
+        payments = "оплачено"
+    else:
+        payments = "не оплачено"
+
+    # Получаем расписание
+    student_schedule = get_user_schedule(user_id)
     if student_schedule is not None:
         main_schedule, extra_schedule = student_schedule
     else:
@@ -82,17 +91,19 @@ async def show_student_profile(callback: CallbackQuery):
         extra_schedule = "не добавлено"
 
     text = (
-    f"👤 Имя: {name}\n"
-    f"📞 Телефон: {phone}\n\n"
-    f"📘 Уроки в месяц: {lesson}\n"
-    f"⏰ Часы в день: {hours}\n"
-    f"📅 Неделя: {week}\n\n"
-    f"📕 Основное расписание: {main_schedule}\n"
-    f"📗 Дополнительные уроки: {extra_schedule}\n\n"
-    f"📉 Оставшиеся уроки: {remaining_lessons}\n"
-    f"💰 Оплаты: {payments}\n"
-)
+        f"👤 Имя: {name}\n"
+        f"📞 Телефон: {phone}\n\n"
+        f"📘 Уроки в месяц: {lesson}\n"
+        f"⏰ Часы в день: {hours}\n"
+        f"📅 Неделя: {week}\n\n"
+        f"📕 Основное расписание: {main_schedule}\n"
+        f"📗 Дополнительные уроки: {extra_schedule}\n\n"
+        f"📉 Оставшиеся уроки: {remaining_lessons}\n"
+        f"💰 Оплата: {payments}\n"
+    )
+
     await callback.message.answer(text)
+
 
 
 
@@ -130,7 +141,7 @@ async def confirm_lesson_callback(callback: CallbackQuery):
 
         if status == "не оплачено":
             await bot.send_message(
-                chat_id=-1003459152392,
+                chat_id=-5049926092,
                 text=f"❗ У ученика {username} закончились уроки.\nПора оплатить обучение!"
             )
 
